@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Dns服务 on aphuse blog </title>
+      <generator uri="https://gohugo.io">Hugo</generator>
+    <link>http://aphuse.github.io/categories/dns%E6%9C%8D%E5%8A%A1/</link>
+    <language>zh-cn</language>
+    <author>aphuse</author>
+    
+    <updated>Tue, 01 Dec 2015 15:24:43 -1800</updated>
+    
+    <item>
+      <title>centos6.7下架设DNS服务</title>
+      <link>http://aphuse.github.io/post/dnsInstall/</link>
+      <pubDate>Tue, 01 Dec 2015 15:24:43 -1800</pubDate>
+      <author>aphuse</author>
+      <guid>http://aphuse.github.io/post/dnsInstall/</guid>
+      <description>
+
+&lt;h4 id=&#34;系统环境:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;系统环境&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;系统发行版：CentOS release 6.7 (Final)&lt;/li&gt;
+&lt;li&gt;内核版本：GNU/Linux 2.6.32-573.8.1.el6.x86_64&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;安装bind:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;安装bind&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;yum install bind bind-chroot bind-utils
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;配置bind:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;配置bind&lt;/h4&gt;
+
+&lt;p&gt;&amp;emsp;&amp;emsp;相关配置文件可以参考/usr/share/doc/bind-*/sample/里面的示例配置文件&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;编辑/etc/named.conf文件&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;//file:/etc/named.conf
+acl corpnets {192.168.0.0/16;}; // 授权核心网络
+options {
+	listen-on port 53 { any; };
+	listen-on-v6 port 53 { ::1; };
+	directory 	&amp;quot;/var/named&amp;quot;;
+	dump-file 	&amp;quot;/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/var/named/data/named_stats.txt&amp;quot;;
+        memstatistics-file &amp;quot;/var/named/data/named_mem_stats.txt&amp;quot;;
+	allow-query     { corpnets; };
+	allow-query-cache { corpnets; };
+	recursion yes;
+	forwarders { 114.114.114.114; };
+	dnssec-enable yes;
+	dnssec-validation no;
+	dnssec-lookaside auto;
+	/* Path to ISC DLV key */
+	bindkeys-file &amp;quot;/etc/named.iscdlv.key&amp;quot;;
+	managed-keys-directory &amp;quot;/var/named/dynamic&amp;quot;;
+};
+//日志配置
+logging {
+        channel default_debug {
+                file &amp;quot;data/named.run&amp;quot;;
+                severity warning;
+        };
+};
+// 使用view，所有的zone都要配置在view中
+view nets192 {
+	match-clients 	   { corpnets;};
+	match-destinations { any; };
+	recursion yes;
+
+	zone &amp;quot;.&amp;quot; IN {
+        	type hint;
+        	file &amp;quot;named.ca&amp;quot;;
+	};
+	include &amp;quot;/etc/named.rfc1912.zones&amp;quot;;
+};
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;编辑/etc/named.rfc1912.zones文件&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;//file:/etc/named.rfc1912.zones
+//配置本地域名解析，此配置在运行named服务后会自动生成，可以不用修改
+zone &amp;quot;localhost.localdomain&amp;quot; IN {
+	type master;
+	file &amp;quot;named.localhost&amp;quot;;
+	allow-update { none; };
+};
+zone &amp;quot;localhost&amp;quot; IN {
+	type master;
+	file &amp;quot;named.localhost&amp;quot;;
+	allow-update { none; };
+};
+zone &amp;quot;1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa&amp;quot; IN {
+	type master;
+	file &amp;quot;named.loopback&amp;quot;;
+	allow-update { none; };
+};
+zone &amp;quot;1.0.0.127.in-addr.arpa&amp;quot; IN {
+	type master;
+	file &amp;quot;named.loopback&amp;quot;;
+	allow-update { none; };
+};
+zone &amp;quot;0.in-addr.arpa&amp;quot; IN {
+	type master;
+	file &amp;quot;named.empty&amp;quot;;
+	allow-update { none; };
+};
+//配置域名正向解析和反向解析，这里的配置需要自己手动添加
+zone &amp;quot;test.cn&amp;quot; IN {
+	type master;
+	file &amp;quot;192.test.cn.zone&amp;quot;;
+	allow-update { none; };
+};
+zone &amp;quot;1.168.192.in-addr.arpa&amp;quot; IN {
+        type master;
+        file &amp;quot;192.test.cn.local&amp;quot;;
+        allow-update { none; };
+};
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;编辑文件/var/named/192.test.cn.zone&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;;file:/var/named/192.test.cn.zone
+;test.cn
+$TTL	3600
+@ IN  SOA localhost root (
+					201512011402 ; serial (d. adams)
+					3H           ; refresh
+					15M          ; retry
+					1W           ; expiry
+					1D )         ; minimum
+      IN NS   localhost.
+@     IN A    192.168.1.224
+dns   IN A    192.168.1.224
+www   IN A    192.168.1.4
+ftp   IN A    192.168.1.5
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;编辑文件/var/named/192.test.cn.local&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;;file:/var/named/192.test.cn.local
+;test.cn
+$TTL	3600
+@ IN  SOA  localhost. root.localhost.  (
+           201512011402 ; Serial
+           1M           ; Refresh
+           15M          ; Retry
+           1W           ; Expire
+           1h )         ; Minimum
+        IN      NS      localhost.
+224     IN      PTR     dns.test.cn.
+4       IN      PTR     www.test.cn.
+5       IN      PTR     ftp.test.cn.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;开放named服务端口:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;开放named服务端口&lt;/h4&gt;
+
+&lt;p&gt;&amp;emsp;&amp;emsp;named服务使用的端口号是53，配置防火墙开放53端口。执行下面代码打开53端口并保存设定。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;iptable -A INPUT -m state --state NEW -m tcp -p tcp --dport 53 -j ACCEPT
+iptable -A INPUT -m state --state NEW -m udp -p udp --dport 53 -j ACCEPT
+iptables-save
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;启动named服务-测试:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;启动named服务,测试&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;启动服务&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;service named start
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;测试&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;dig @192.168.1.224 www.test.cn
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&#34;配置named服务开机启动:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;配置named服务开机启动&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;chkconfig named on
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;hr /&gt;
+
+&lt;h4 id=&#34;问题及解决方案:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;问题及解决方案&lt;/h4&gt;
+
+&lt;hr /&gt;
+
+&lt;h5 id=&#34;问题一:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;问题一&lt;/h5&gt;
+
+&lt;p&gt;&amp;emsp;&amp;emsp;error (network unreachable) resolving &amp;lsquo;www.linuser.com.dlv.isc.org/DLV/IN&amp;rsquo;: 2001:502:ad09::23#53
+类似这样的报错是由于开启了IPv6，关闭dns IPv6即可。&lt;/p&gt;
+
+&lt;h6 id=&#34;解决方法:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;解决方法&lt;/h6&gt;
+
+&lt;p&gt;1) 在文件/etc/sysconfig/named后面添加一行&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;  OPTIONS=&amp;quot;-4&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;2) 在/etc/named.conf中注释掉下面的内容&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;  options {
+        listen-on port 53 { any; };
+        // listen-on-v6 port 53 { ::1; };
+
+        ......
+  }
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

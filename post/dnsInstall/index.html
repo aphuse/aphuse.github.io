@@ -1,0 +1,397 @@
+<!DOCTYPE HTML>
+
+<html lang="zh-cn">
+
+<head>
+	<meta charset="utf-8">
+	<title>centos6.7下架设DNS服务 - aphuse blog</title>
+	<meta name="author" content="map[name:aphuse email:xiezhifu@gmail.com]">
+
+	
+	  
+	<meta name="description" content="介绍如何在centos6.7下架设DNS服务">
+	
+
+	
+	<meta name="HandheldFriendly" content="True">
+	<meta name="MobileOptimized" content="320">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    
+	<link href='/index.xml' rel="alternate" title="aphuse blog" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://aphuse.github.io/post/dnsInstall/">
+	<link href="http://aphuse.github.io//favicon.png" rel="shortcut icon">
+	<link href="http://aphuse.github.io//css/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="http://aphuse.github.io//css/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	
+	<link href='//fonts.useso.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>
+	<script src="//ajax.useso.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+  
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	
+	<script src="http://aphuse.github.io//js/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='http://www.gravatar.com/avatar/" + MD5('xiezhifu@gmail.com') + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+	
+</div>
+
+<nav id="main-nav">
+<section class="aboutme">
+  <p>
+    aphuse 个人博客
+  </p>
+</section>
+
+<ul class="main">
+    <li><a href="/">首页</a></li>
+    <li><a href="/post/">归档</a></li>
+    <li><a href="/aboutme">关于</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href='mailto:xiezhifu@gmail.com' title="Email">Email</a>
+		
+		
+		
+			<a class="google" href='https://plus.google.com/107395644201321544012' rel="author" title="Google+">Google+</a>
+		
+		
+		
+			<a class="github" href='https://github.com/aphuse' title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href='/index.xml' title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>
+			</div>
+		</div>
+		<div class="mid-col">
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner">
+					<div itemscope itemtype="http://schema.org/Blog">
+					<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <h1 class="title" itemprop="name">centos6.7下架设DNS服务</h1>
+	<div class="entry-content" itemprop="articleBody">
+
+<h4 id="系统环境:7438b85971e53fee7fb73afeb33bd2c4">系统环境</h4>
+
+<ul>
+<li>系统发行版：CentOS release 6.7 (Final)</li>
+<li>内核版本：GNU/Linux 2.6.32-573.8.1.el6.x86_64</li>
+</ul>
+
+<h4 id="安装bind:7438b85971e53fee7fb73afeb33bd2c4">安装bind</h4>
+
+<pre><code class="language-shell">yum install bind bind-chroot bind-utils
+</code></pre>
+
+<h4 id="配置bind:7438b85971e53fee7fb73afeb33bd2c4">配置bind</h4>
+
+<p>&emsp;&emsp;相关配置文件可以参考/usr/share/doc/bind-*/sample/里面的示例配置文件</p>
+
+<ul>
+<li>编辑/etc/named.conf文件</li>
+</ul>
+
+<pre><code class="language-shell">//file:/etc/named.conf
+acl corpnets {192.168.0.0/16;}; // 授权核心网络
+options {
+	listen-on port 53 { any; };
+	listen-on-v6 port 53 { ::1; };
+	directory 	&quot;/var/named&quot;;
+	dump-file 	&quot;/var/named/data/cache_dump.db&quot;;
+        statistics-file &quot;/var/named/data/named_stats.txt&quot;;
+        memstatistics-file &quot;/var/named/data/named_mem_stats.txt&quot;;
+	allow-query     { corpnets; };
+	allow-query-cache { corpnets; };
+	recursion yes;
+	forwarders { 114.114.114.114; };
+	dnssec-enable yes;
+	dnssec-validation no;
+	dnssec-lookaside auto;
+	/* Path to ISC DLV key */
+	bindkeys-file &quot;/etc/named.iscdlv.key&quot;;
+	managed-keys-directory &quot;/var/named/dynamic&quot;;
+};
+//日志配置
+logging {
+        channel default_debug {
+                file &quot;data/named.run&quot;;
+                severity warning;
+        };
+};
+// 使用view，所有的zone都要配置在view中
+view nets192 {
+	match-clients 	   { corpnets;};
+	match-destinations { any; };
+	recursion yes;
+
+	zone &quot;.&quot; IN {
+        	type hint;
+        	file &quot;named.ca&quot;;
+	};
+	include &quot;/etc/named.rfc1912.zones&quot;;
+};
+
+</code></pre>
+
+<ul>
+<li>编辑/etc/named.rfc1912.zones文件</li>
+</ul>
+
+<pre><code class="language-shell">//file:/etc/named.rfc1912.zones
+//配置本地域名解析，此配置在运行named服务后会自动生成，可以不用修改
+zone &quot;localhost.localdomain&quot; IN {
+	type master;
+	file &quot;named.localhost&quot;;
+	allow-update { none; };
+};
+zone &quot;localhost&quot; IN {
+	type master;
+	file &quot;named.localhost&quot;;
+	allow-update { none; };
+};
+zone &quot;1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa&quot; IN {
+	type master;
+	file &quot;named.loopback&quot;;
+	allow-update { none; };
+};
+zone &quot;1.0.0.127.in-addr.arpa&quot; IN {
+	type master;
+	file &quot;named.loopback&quot;;
+	allow-update { none; };
+};
+zone &quot;0.in-addr.arpa&quot; IN {
+	type master;
+	file &quot;named.empty&quot;;
+	allow-update { none; };
+};
+//配置域名正向解析和反向解析，这里的配置需要自己手动添加
+zone &quot;test.cn&quot; IN {
+	type master;
+	file &quot;192.test.cn.zone&quot;;
+	allow-update { none; };
+};
+zone &quot;1.168.192.in-addr.arpa&quot; IN {
+        type master;
+        file &quot;192.test.cn.local&quot;;
+        allow-update { none; };
+};
+</code></pre>
+
+<ul>
+<li>编辑文件/var/named/192.test.cn.zone</li>
+</ul>
+
+<pre><code class="language-shell">;file:/var/named/192.test.cn.zone
+;test.cn
+$TTL	3600
+@ IN  SOA localhost root (
+					201512011402 ; serial (d. adams)
+					3H           ; refresh
+					15M          ; retry
+					1W           ; expiry
+					1D )         ; minimum
+      IN NS   localhost.
+@     IN A    192.168.1.224
+dns   IN A    192.168.1.224
+www   IN A    192.168.1.4
+ftp   IN A    192.168.1.5
+
+</code></pre>
+
+<ul>
+<li>编辑文件/var/named/192.test.cn.local</li>
+</ul>
+
+<pre><code class="language-shell">;file:/var/named/192.test.cn.local
+;test.cn
+$TTL	3600
+@ IN  SOA  localhost. root.localhost.  (
+           201512011402 ; Serial
+           1M           ; Refresh
+           15M          ; Retry
+           1W           ; Expire
+           1h )         ; Minimum
+        IN      NS      localhost.
+224     IN      PTR     dns.test.cn.
+4       IN      PTR     www.test.cn.
+5       IN      PTR     ftp.test.cn.
+
+</code></pre>
+
+<h4 id="开放named服务端口:7438b85971e53fee7fb73afeb33bd2c4">开放named服务端口</h4>
+
+<p>&emsp;&emsp;named服务使用的端口号是53，配置防火墙开放53端口。执行下面代码打开53端口并保存设定。</p>
+
+<pre><code class="language-shell">iptable -A INPUT -m state --state NEW -m tcp -p tcp --dport 53 -j ACCEPT
+iptable -A INPUT -m state --state NEW -m udp -p udp --dport 53 -j ACCEPT
+iptables-save
+</code></pre>
+
+<h4 id="启动named服务-测试:7438b85971e53fee7fb73afeb33bd2c4">启动named服务,测试</h4>
+
+<ul>
+<li>启动服务</li>
+</ul>
+
+<pre><code class="language-shell">service named start
+</code></pre>
+
+<ul>
+<li>测试</li>
+</ul>
+
+<pre><code class="language-shell">dig @192.168.1.224 www.test.cn
+</code></pre>
+
+<h4 id="配置named服务开机启动:7438b85971e53fee7fb73afeb33bd2c4">配置named服务开机启动</h4>
+
+<pre><code class="language-shell">chkconfig named on
+</code></pre>
+
+<hr />
+
+<h4 id="问题及解决方案:7438b85971e53fee7fb73afeb33bd2c4">问题及解决方案</h4>
+
+<hr />
+
+<h5 id="问题一:7438b85971e53fee7fb73afeb33bd2c4">问题一</h5>
+
+<p>&emsp;&emsp;error (network unreachable) resolving &lsquo;www.linuser.com.dlv.isc.org/DLV/IN&rsquo;: 2001:502:ad09::23#53
+类似这样的报错是由于开启了IPv6，关闭dns IPv6即可。</p>
+
+<h6 id="解决方法:7438b85971e53fee7fb73afeb33bd2c4">解决方法</h6>
+
+<p>1) 在文件/etc/sysconfig/named后面添加一行</p>
+
+<pre><code class="language-shell">  OPTIONS=&quot;-4&quot;
+</code></pre>
+
+<p>2) 在/etc/named.conf中注释掉下面的内容</p>
+
+<pre><code class="language-shell">  options {
+        listen-on port 53 { any; };
+        // listen-on-v6 port 53 { ::1; };
+
+        ......
+  }
+</code></pre>
+</div>
+  <nav id="pagenavi">
+    
+        <a href="http://aphuse.github.io/post/db2afterinstall/" class="prev">上一篇:DB2数据库客户端配置连接</a>
+    
+      
+  </nav>
+</article>
+					
+						<div class="share">
+	<div class="bdsharebuttonbox">
+		<a title="分享到QQ空间" href="#" class="bds_qzone" data-cmd="qzone"></a>
+		<a title="分享到新浪微博" href="#" class="bds_tsina" data-cmd="tsina"></a>
+		<a title="分享到腾讯微博" href="#" class="bds_tqq" data-cmd="tqq"></a>
+		<a title="分享到微信" href="#" class="bds_weixin" data-cmd="weixin"></a>
+		<a href="#" class="bds_more" data-cmd="more"></a>
+		</div>
+	<script>
+	window._bd_share_config={
+		"common":{
+			"bdSnsKey":{},
+			"bdText":"",
+			"bdMini":"2",
+			"bdPic":"",
+			"bdStyle":"0",
+			"bdSize":"16"
+			},
+		"share":{}
+	};
+	with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+	</script>
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	
+	</div>
+	
+</div>
+
+					
+					
+					<section id="comment">
+					    <h1 class="title">Comments</h1>
+					    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+					</section>
+					
+					
+
+<script type="text/javascript">
+    
+    var disqus_shortname = 'aphuse';
+
+    
+    
+
+    
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+    
+</script>
+
+
+				    </div>
+				</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2015
+
+    aphuse
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://aphuse.github.io//js/slash.js"></script>
+<script src="http://aphuse.github.io//js/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script></footer>
+		</div>
+	</div>
+	
+
+</body>
+</html>

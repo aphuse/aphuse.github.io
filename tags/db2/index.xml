@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+      <title>Db2 on aphuse blog </title>
+      <generator uri="https://gohugo.io">Hugo</generator>
+    <link>http://aphuse.github.io/tags/db2/</link>
+    <language>zh-cn</language>
+    <author>aphuse</author>
+    
+    <updated>Mon, 07 Dec 2015 14:59:54 CST</updated>
+    
+    <item>
+      <title>DB2数据库客户端配置连接</title>
+      <link>http://aphuse.github.io/post/db2afterinstall/</link>
+      <pubDate>Mon, 07 Dec 2015 14:59:54 CST</pubDate>
+      <author>aphuse</author>
+      <guid>http://aphuse.github.io/post/db2afterinstall/</guid>
+      <description>
+
+&lt;p&gt;&amp;emsp;&amp;emsp;安装好DB2数据库之后，如果想要进行客户端的连接，首先要在服务端做一些配置，才能顺利连接得上数据库服务。下面我们来介绍一下如何进行配置。&lt;/p&gt;
+
+&lt;h4 id=&#34;系统环境:ec00439a9b3e82ad3dcdaa65ddc1d682&#34;&gt;系统环境&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;操作系统：linux/unix&lt;/li&gt;
+&lt;li&gt;DB2: v9.5&lt;/li&gt;
+&lt;li&gt;DB2实例名：db2&lt;/li&gt;
+&lt;li&gt;DB2服务器IP： 192.168.10.203&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;服务端配置:ec00439a9b3e82ad3dcdaa65ddc1d682&#34;&gt;服务端配置&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;查看一下服务名&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 get dbm cfg |grep SVC
+TCP/IP Service name                          (SVCENAME) = DB2_db2
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;设置指定实例的服务名&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 update dbm cfg using SVCENAME DB2_db2
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;查看设置是否生效&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 get dbm cfg |grep SVC
+TCP/IP Service name                          (SVCENAME) = DB2_db2
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;修改/etc/services文件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ cat /etc/services|grep DB2_db2
+DB2_db2         50000/tcp
+DB2_db2_1       50001/tcp
+DB2_db2_2       50002/tcp
+DB2_db2_END     50003/tcp
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;设置通讯协议为tcpip&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2set DB2COMM=tcpip
+$ db2set
+DB2COMM=TCPIP
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;重启db2实例，就可以进行客户端设置连接了&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2stop
+$ db2start
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;客户端配置:ec00439a9b3e82ad3dcdaa65ddc1d682&#34;&gt;客户端配置&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;建节点目录&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 catalog TCPIP node n1 remote 192.168.10.203 server 50000
+$ db2 terminate
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;建数据库编目&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 catalog database demo as demo_as at node n1 authentication server
+$ db2 terminate
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;连接数据库&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 connect to demo_as user db2 using passwd
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;删除数据库编码和节点命令&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 uncatalog db demo_as
+$ db2 uncatalog node n1
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;查看节点信息&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;$ db2 list node directory
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
