@@ -3,7 +3,7 @@
   <channel>
       <title>Db2 on aphuse blog </title>
       <generator uri="https://gohugo.io">Hugo</generator>
-    <link>http://blog.aphuse.tk/categories/db2/</link>
+    <link>http://aphuse.github.io/categories/db2/</link>
     <language>zh-cn</language>
     <author>aphuse</author>
     
@@ -11,10 +11,10 @@
     
     <item>
       <title>DB2数据库客户端配置连接</title>
-      <link>http://blog.aphuse.tk/post/db2afterinstall/</link>
+      <link>http://aphuse.github.io/post/db2afterinstall/</link>
       <pubDate>Mon, 07 Dec 2015 14:59:54 CST</pubDate>
       <author>aphuse</author>
-      <guid>http://blog.aphuse.tk/post/db2afterinstall/</guid>
+      <guid>http://aphuse.github.io/post/db2afterinstall/</guid>
       <description>
 
 &lt;p&gt;&amp;emsp;&amp;emsp;安装好DB2数据库之后，如果想要进行客户端的连接，首先要在服务端做一些配置，才能顺利连接得上数据库服务。下面我们来介绍一下如何进行配置。&lt;/p&gt;

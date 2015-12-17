@@ -3,7 +3,7 @@
   <channel>
       <title>Lvm on aphuse blog </title>
       <generator uri="https://gohugo.io">Hugo</generator>
-    <link>http://blog.aphuse.tk/categories/lvm/</link>
+    <link>http://aphuse.github.io/categories/lvm/</link>
     <language>zh-cn</language>
     <author>aphuse</author>
     
@@ -11,10 +11,10 @@
     
     <item>
       <title>LVM管理磁盘的基本用法</title>
-      <link>http://blog.aphuse.tk/post/howtouselvm/</link>
+      <link>http://aphuse.github.io/post/howtouselvm/</link>
       <pubDate>Thu, 17 Dec 2015 14:59:54 CST</pubDate>
       <author>aphuse</author>
-      <guid>http://blog.aphuse.tk/post/howtouselvm/</guid>
+      <guid>http://aphuse.github.io/post/howtouselvm/</guid>
       <description>
 
 &lt;p&gt;&amp;emsp;&amp;emsp;LVM 是一种可用在Linux内核的逻辑分卷管理器；可用于管理磁盘驱动器或其他类似的大容量存储设备。&lt;/p&gt;
