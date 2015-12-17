@@ -3,7 +3,7 @@
   <channel>
       <title>Dns服务 on aphuse blog </title>
       <generator uri="https://gohugo.io">Hugo</generator>
-    <link>http://aphuse.github.io/tags/dns%E6%9C%8D%E5%8A%A1/</link>
+    <link>http://blog.aphuse.tk/tags/dns%E6%9C%8D%E5%8A%A1/</link>
     <language>zh-cn</language>
     <author>aphuse</author>
     
@@ -11,10 +11,10 @@
     
     <item>
       <title>centos6.7下架设DNS服务</title>
-      <link>http://aphuse.github.io/post/dnsInstall/</link>
+      <link>http://blog.aphuse.tk/post/dnsInstall/</link>
       <pubDate>Tue, 01 Dec 2015 15:24:43 -1800</pubDate>
       <author>aphuse</author>
-      <guid>http://aphuse.github.io/post/dnsInstall/</guid>
+      <guid>http://blog.aphuse.tk/post/dnsInstall/</guid>
       <description>
 
 &lt;h4 id=&#34;系统环境:7438b85971e53fee7fb73afeb33bd2c4&#34;&gt;系统环境&lt;/h4&gt;

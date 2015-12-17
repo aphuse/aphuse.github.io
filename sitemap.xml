@@ -2,18 +2,23 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://aphuse.github.io/</loc>
-    <lastmod>2015-12-07T14:59:54+08:00</lastmod>
+    <loc>http://blog.aphuse.tk/</loc>
+    <lastmod>2015-12-17T14:59:54+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>http://aphuse.github.io/post/db2afterinstall/</loc>
+    <loc>http://blog.aphuse.tk/post/howtouselvm/</loc>
+    <lastmod>2015-12-17T14:59:54+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://blog.aphuse.tk/post/db2afterinstall/</loc>
     <lastmod>2015-12-07T14:59:54+08:00</lastmod>
   </url>
   
   <url>
-    <loc>http://aphuse.github.io/post/dnsInstall/</loc>
+    <loc>http://blog.aphuse.tk/post/dnsInstall/</loc>
     <lastmod>2015-12-01T15:24:43-18:00</lastmod>
   </url>
   
