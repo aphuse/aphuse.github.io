@@ -1,0 +1,363 @@
+<!DOCTYPE HTML>
+
+<html lang="zh-cn">
+
+<head>
+	<meta charset="utf-8">
+	<title>如何调整LVM相关PV、VG和LV大小 - aphuse blog</title>
+	<meta name="author" content="map[name:aphuse email:xiezhifu@gmail.com]">
+
+	
+	  
+	<meta name="description" content="如何调整LVM相关PV、VG和LV大小">
+	
+
+	
+	<meta name="HandheldFriendly" content="True">
+	<meta name="MobileOptimized" content="320">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    
+	<link href='/index.xml' rel="alternate" title="aphuse blog" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://aphuse.github.io/post/howtoresizelvm/">
+	<link href="http://aphuse.github.io//favicon.png" rel="shortcut icon">
+	<link href="http://aphuse.github.io//css/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="http://aphuse.github.io//css/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	
+	<link href='//fonts.useso.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>
+	<script src="//ajax.useso.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+  
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	
+	<script src="http://aphuse.github.io//js/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='http://www.gravatar.com/avatar/" + MD5('xiezhifu@gmail.com') + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+	
+</div>
+
+<nav id="main-nav">
+<section class="aboutme">
+  <p>
+    aphuse 个人博客
+  </p>
+</section>
+
+<ul class="main">
+    <li><a href="/">首页</a></li>
+    <li><a href="/post/">归档</a></li>
+    <li><a href="/aboutme">关于</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href='mailto:xiezhifu@gmail.com' title="Email">Email</a>
+		
+		
+		
+			<a class="google" href='https://plus.google.com/107395644201321544012' rel="author" title="Google+">Google+</a>
+		
+		
+		
+			<a class="github" href='https://github.com/aphuse' title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href='/index.xml' title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>
+			</div>
+		</div>
+		<div class="mid-col">
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner">
+					<div itemscope itemtype="http://schema.org/Blog">
+					<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <h1 class="title" itemprop="name">如何调整LVM相关PV、VG和LV大小</h1>
+	<div class="entry-content" itemprop="articleBody">
+
+<p>之前介绍了使用LVM管理磁盘基本用法，并且我们建议使用多少空间就分配多少空间，空间不够之后我们再扩大空间。那LVM是如何调整空间的呢？下面我们就来介绍如何调整LVM的PV、VG和LV的大小。</p>
+
+<h3 id="物理卷-pv:a16989d0c84f2c76d242a15a66572b80">物理卷(PV)</h3>
+
+<ul>
+<li>扩增</li>
+</ul>
+
+<p>增大分区/dev/sda2的容量之后，需要执行以下命令扩展物理卷的大小。</p>
+
+<pre><code class="language-shell">pvresize /dev/sda2
+</code></pre>
+
+<p>命令将自动探测设备的当前大小并将物理卷扩展到其最大容量。该命令可以在卷在线运行。</p>
+
+<ul>
+<li>缩小</li>
+</ul>
+
+<p>在减小某个物理卷所在设备大小之前，需要通过指定&ndash;setphysicalvolumesize size参数缩小物理卷大小。</p>
+
+<pre><code class="language-shell">pvresize --setphysicalvolumesize 40G /dev/sda2
+</code></pre>
+
+<p>该命令可能会提示该物理卷已分配物理区域超过了命令指定的新大小界限，pvresize命令会拒绝将物理卷缩小。若磁盘空间足够大，可以通过pvmove命令将物理区域重新分配至别的卷组来解决这个问题。</p>
+
+<ul>
+<li>移动物理区域</li>
+</ul>
+
+<p>使用pvdisplay命令查看物理分段的分布情况，具体命令参数如下：</p>
+
+<pre><code class="language-shell">pvdisplay -v -m
+</code></pre>
+
+<p>减小物理卷大小，一般必须把所有的已用分段移到前部。假如/dev/sda2的可用空间在第0至第153600分段共153601个可用区域，我们可以从最后的分段中移动相同数目的物理区域来填补这段空间。</p>
+
+<pre><code class="language-shell">pvmove --alloc anywhere /dev/sda2:307201-399668 /dev/sda2:0-92466
+</code></pre>
+
+<p>参数&ndash;alloc anywhere可以用于在同一个分区中移动物理区域的。若要在不同分区中移动，命令形式应该是 pvmove /dev/sda2:1000-1999 /dev/sdb1:0-999 。当操作的数据较多时，移动操作将持续很久（一到两个小时）。最好在Tmux或GNU Screen会话中执行此过程。 <strong>任何形式的意外中断都可能导致致命错误</strong> 。当操作完成后，可运行fsck保证文件系统完整性。</p>
+
+<p>当所有空闲分段都移动到最后的物理区域时，运行vgdisplay查看。之后可以再次运行命令调整物理卷的大小。</p>
+
+<pre><code class="language-shell">pvresize --setphysicalvolumesize size PhysicalVolume
+</code></pre>
+
+<ul>
+<li>调整分区大小</li>
+</ul>
+
+<p>最后，你可以用你喜欢的分区工具来缩小该分区了。</p>
+
+<h3 id="卷组-vg:a16989d0c84f2c76d242a15a66572b80">卷组(VG)</h3>
+
+<ul>
+<li>扩增</li>
+</ul>
+
+<p>添加物理卷到卷组中，先创建一个新的物理卷，然后再把卷组扩充到该物理卷上</p>
+
+<pre><code class="language-shell">pvcreate /dev/sdb1
+vgextend datavg /dev/sdb1
+</code></pre>
+
+<ul>
+<li>缩小</li>
+</ul>
+
+<p>从卷组中移除分区。首先要把分区中的所有数据移到别的分区上，可以使用下面这个简单的命令实现：</p>
+
+<pre><code class="language-shell">pvmove /dev/sdb1
+</code></pre>
+
+<p>同样你也可以指定所要转移的目标分区，把目标分区作为pvmove的第二个参数使用就可以了：</p>
+
+<pre><code class="language-shell">pvmove /dev/sdb1 /dev/sda2
+</code></pre>
+
+<p>然后，可以从卷组中移除物理卷：</p>
+
+<pre><code class="language-shell">vgreduce datavg /dev/sdb1
+</code></pre>
+
+<p>或者把所有空的物理卷全部移除：</p>
+
+<pre><code class="language-shell">vgreduce --all datavg
+</code></pre>
+
+<p>最后如果想要使用该分区，而且不想让LVM以为它是一个物理卷，那么你可以执行以下命令：</p>
+
+<pre><code class="language-shell">pvremove /dev/sdb1
+</code></pre>
+
+<h3 id="逻辑卷-lv:a16989d0c84f2c76d242a15a66572b80">逻辑卷(LV)</h3>
+
+<p>使用lvresize增加或缩小容量，注意：<strong>虽然即便是对根分区，增加文件系统大小一般都可以在线完成（即文件系统已经被挂载），缩小其大小往往要求首先卸载文件系统以避免数据丢失。请首先确定你的文件系统支持相关操作。</strong></p>
+
+<ul>
+<li>扩增</li>
+</ul>
+
+<p>向卷组datavg中的逻辑卷datalv增加2G空间，但不修改其文件系统大小，执行：</p>
+
+<pre><code class="language-shell">lvresize -L +2G datavg/datalv
+</code></pre>
+
+<p>设置datavg/datalv为15G并同时更改其文件系统大小(注意: <strong>仅支持ext2, ext3, ext4, ReiserFS and XFS file systems。如果使用不同文件系统请使用合适的组件。</strong>)</p>
+
+<pre><code class="language-shell">lvresize -L 15G -r datavg/datalv
+</code></pre>
+
+<p>如果想将卷组所有剩下的可用空间都加入一个逻辑卷中，可以执行：</p>
+
+<pre><code class="language-shell">lvresize -l +100%FREE datavg/datalv
+</code></pre>
+
+<ul>
+<li>缩小</li>
+</ul>
+
+<p>从逻辑卷datavg/datalv中减少500MB空间，但不修改其文件系统大小（需要确保文件系统已经缩小过）</p>
+
+<pre><code class="language-shell">lvresize -L -500M datavg/datalv
+</code></pre>
+
+<ul>
+<li>调整文件系统大小</li>
+</ul>
+
+<p>如果上面执行lv{resize,extend,reduce}时没有使用-r, &ndash;resizefs选项， 或文件系统不支持fsadm(8)（如Btrfs, ZFS等），则需要在缩小逻辑卷之前或扩增逻辑卷后手动调整文件系统大小。注意：<strong>并非所有的文件系统都支持无损或/且在线调整大小。</strong></p>
+
+<p>对于ext2/ext3/ext4文件系统使用下列命令</p>
+
+<p>将文件系统大小扩展到逻辑卷支持的最大容量：</p>
+
+<pre><code class="language-shell">resize2fs datavg/datalv
+</code></pre>
+
+<p>将文件系统减小到其所需的最小容量，也可以指定具体的尺寸：</p>
+
+<pre><code class="language-shell">resize2fs -M datavg/datalv
+resize2fs datavg/datalv NewSize
+</code></pre>
+
+<ul>
+<li>移除逻辑卷</li>
+</ul>
+
+<p>警告: <strong>在移除逻辑卷之前，请先备份好数据以免丢失！</strong></p>
+
+<p>首先要找到你所要移除的逻辑卷的名称及其挂载点。</p>
+
+<pre><code class="language-shell">lvs
+lsblk
+</code></pre>
+
+<p>如果要移除的逻辑卷有挂载点，那要先卸载挂载点</p>
+
+<pre><code class="language-shell">umount /&lt;mountpoint&gt;
+</code></pre>
+
+<p>最后可以移除逻辑卷了</p>
+
+<pre><code class="language-shell">lvremove &lt;volume_group&gt;/&lt;logical_volume&gt;
+</code></pre>
+
+<p>最后请不要忘记更新/etc/fstab。</p>
+
+<p>以上就是LVM调整相关组件大小的操作。</p>
+</div>
+  <nav id="pagenavi">
+    
+      
+        <a href="http://aphuse.github.io/post/howtouselvm/" class="next">下一篇:LVM管理磁盘的基本用法</a>
+    
+  </nav>
+</article>
+					
+						<div class="share">
+	<div class="bdsharebuttonbox">
+		<a title="分享到QQ空间" href="#" class="bds_qzone" data-cmd="qzone"></a>
+		<a title="分享到新浪微博" href="#" class="bds_tsina" data-cmd="tsina"></a>
+		<a title="分享到腾讯微博" href="#" class="bds_tqq" data-cmd="tqq"></a>
+		<a title="分享到微信" href="#" class="bds_weixin" data-cmd="weixin"></a>
+		<a href="#" class="bds_more" data-cmd="more"></a>
+		</div>
+	<script>
+	window._bd_share_config={
+		"common":{
+			"bdSnsKey":{},
+			"bdText":"",
+			"bdMini":"2",
+			"bdPic":"",
+			"bdStyle":"0",
+			"bdSize":"16"
+			},
+		"share":{}
+	};
+	with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+	</script>
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	
+	</div>
+	
+</div>
+
+					
+					
+					<section id="comment">
+					    <h1 class="title">Comments</h1>
+					    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+					</section>
+					
+					
+
+<script type="text/javascript">
+    
+    var disqus_shortname = 'aphuse';
+
+    
+    
+
+    
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+    
+</script>
+
+
+				    </div>
+				</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2015
+
+    aphuse
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://aphuse.github.io//js/slash.js"></script>
+<script src="http://aphuse.github.io//js/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script></footer>
+		</div>
+	</div>
+	
+
+</body>
+</html>
