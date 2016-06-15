@@ -7,7 +7,238 @@
     <language>zh-cn</language>
     <author>aphuse</author>
     
-    <updated>Thu, 17 Dec 2015 14:59:54 CST</updated>
+    <updated>Wed, 15 Jun 2016 20:17:54 CST</updated>
+    
+    <item>
+      <title>使用fail2ban防止暴力攻击domino服务</title>
+      <link>http://aphuse.github.io/post/usedfail2banfordomino/</link>
+      <pubDate>Wed, 15 Jun 2016 20:17:54 CST</pubDate>
+      <author>aphuse</author>
+      <guid>http://aphuse.github.io/post/usedfail2banfordomino/</guid>
+      <description>&lt;p&gt;&amp;emsp;&amp;emsp;当架设好domino邮件服务器并且将其放入公网之后，你就会发现日志里有很多如下的SMTP验证的错误。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;[23671:00010-2690815744] 2016-06-14 15:54:23   SMTP Server: Authentication failed for user heshuai ; connecting host 118.184.13.95
+[23671:00013-2181035776] 2016-06-14 15:54:23   SMTP Server: Authentication failed for user gaohuan ; connecting host 118.184.13.95
+[23671:00012-2181035776] 2016-06-14 15:54:23   SMTP Server: Authentication failed for user hepin ; connecting host 118.184.13.95
+[23671:00012-2181035776] 2016-06-14 15:54:24   SMTP Server: Authentication failed for user gaohuan ; connecting host 118.184.13.95
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这种错误很明显是有人在暴力攻击你的domino服务器。那我们要想阻止这种暴力攻击的话，使用&lt;a href=&#34;www.fail2ban.org&#34;&gt;fail2ban&lt;/a&gt;工具是一个简单高效的方法。&lt;/p&gt;
+
+&lt;p&gt;在目录/etc/fail2ban/filter.d下新建domino-smtp.conf文件，内容如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;# Fail2Ban filter configuration file
+#
+[Definition]
+# 定义比配STMP验证失败正则表达式
+# 如下比配前面日志里的记录
+# [23671:00012-2181035776] 2016-06-14 15:54:24   SMTP Server: Authentication failed for user gaohuan ; connecting host 118.184.13.95
+#
+failregex = .* SMTP Server: Authentication failed for user .* connecting host &amp;lt;HOST&amp;gt;
+
+ignoreregex =
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后编辑文件jail.local(注：如果没有这个文件就新建)，新加domino-smtp的jail配置&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;[domino-smtp]
+enabled = true
+port = smtp,465
+protocol = tcp
+filter = domino-smtp
+logpath = /opt/ibm/notesdata/IBM_TECHNICAL_SUPPORT/console.log
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最后重启fail2ban应用使配置生效，然后监控日志/var/log/fail2ban.log，你会看到如下记录，说明配置已经生效。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;2016-06-15 19:36:04,215 fail2ban.actions        [1536]: NOTICE  [domino-smtp] Ban 118.184.13.95
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者也可以使用命令fail2ban-client status domino-smtp进行监控。更多fail2ban使用请查看官方网站。使用iptables -L -n 就会发现地址118.184.13.95已经被防火墙阻止访问25和465端口了。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>如何调整LVM相关PV、VG和LV大小</title>
+      <link>http://aphuse.github.io/post/howtoresizelvm/</link>
+      <pubDate>Wed, 30 Dec 2015 14:59:54 CST</pubDate>
+      <author>aphuse</author>
+      <guid>http://aphuse.github.io/post/howtoresizelvm/</guid>
+      <description>
+
+&lt;p&gt;之前介绍了使用LVM管理磁盘基本用法，并且我们建议使用多少空间就分配多少空间，空间不够之后我们再扩大空间。那LVM是如何调整空间的呢？下面我们就来介绍如何调整LVM的PV、VG和LV的大小。&lt;/p&gt;
+
+&lt;h3 id=&#34;物理卷-pv:a16989d0c84f2c76d242a15a66572b80&#34;&gt;物理卷(PV)&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;扩增&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;增大分区/dev/sda2的容量之后，需要执行以下命令扩展物理卷的大小。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvresize /dev/sda2
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;命令将自动探测设备的当前大小并将物理卷扩展到其最大容量。该命令可以在卷在线运行。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;缩小&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;在减小某个物理卷所在设备大小之前，需要通过指定&amp;ndash;setphysicalvolumesize size参数缩小物理卷大小。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvresize --setphysicalvolumesize 40G /dev/sda2
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;该命令可能会提示该物理卷已分配物理区域超过了命令指定的新大小界限，pvresize命令会拒绝将物理卷缩小。若磁盘空间足够大，可以通过pvmove命令将物理区域重新分配至别的卷组来解决这个问题。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;移动物理区域&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;使用pvdisplay命令查看物理分段的分布情况，具体命令参数如下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvdisplay -v -m
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;减小物理卷大小，一般必须把所有的已用分段移到前部。假如/dev/sda2的可用空间在第0至第153600分段共153601个可用区域，我们可以从最后的分段中移动相同数目的物理区域来填补这段空间。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvmove --alloc anywhere /dev/sda2:307201-399668 /dev/sda2:0-92466
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;参数&amp;ndash;alloc anywhere可以用于在同一个分区中移动物理区域的。若要在不同分区中移动，命令形式应该是 pvmove /dev/sda2:1000-1999 /dev/sdb1:0-999 。当操作的数据较多时，移动操作将持续很久（一到两个小时）。最好在Tmux或GNU Screen会话中执行此过程。 &lt;strong&gt;任何形式的意外中断都可能导致致命错误&lt;/strong&gt; 。当操作完成后，可运行fsck保证文件系统完整性。&lt;/p&gt;
+
+&lt;p&gt;当所有空闲分段都移动到最后的物理区域时，运行vgdisplay查看。之后可以再次运行命令调整物理卷的大小。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvresize --setphysicalvolumesize size PhysicalVolume
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;调整分区大小&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;最后，你可以用你喜欢的分区工具来缩小该分区了。&lt;/p&gt;
+
+&lt;h3 id=&#34;卷组-vg:a16989d0c84f2c76d242a15a66572b80&#34;&gt;卷组(VG)&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;扩增&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;添加物理卷到卷组中，先创建一个新的物理卷，然后再把卷组扩充到该物理卷上&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvcreate /dev/sdb1
+vgextend datavg /dev/sdb1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;缩小&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;从卷组中移除分区。首先要把分区中的所有数据移到别的分区上，可以使用下面这个简单的命令实现：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvmove /dev/sdb1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;同样你也可以指定所要转移的目标分区，把目标分区作为pvmove的第二个参数使用就可以了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvmove /dev/sdb1 /dev/sda2
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后，可以从卷组中移除物理卷：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;vgreduce datavg /dev/sdb1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者把所有空的物理卷全部移除：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;vgreduce --all datavg
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最后如果想要使用该分区，而且不想让LVM以为它是一个物理卷，那么你可以执行以下命令：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;pvremove /dev/sdb1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;逻辑卷-lv:a16989d0c84f2c76d242a15a66572b80&#34;&gt;逻辑卷(LV)&lt;/h3&gt;
+
+&lt;p&gt;使用lvresize增加或缩小容量，注意：&lt;strong&gt;虽然即便是对根分区，增加文件系统大小一般都可以在线完成（即文件系统已经被挂载），缩小其大小往往要求首先卸载文件系统以避免数据丢失。请首先确定你的文件系统支持相关操作。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;扩增&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;向卷组datavg中的逻辑卷datalv增加2G空间，但不修改其文件系统大小，执行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;lvresize -L +2G datavg/datalv
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;设置datavg/datalv为15G并同时更改其文件系统大小(注意: &lt;strong&gt;仅支持ext2, ext3, ext4, ReiserFS and XFS file systems。如果使用不同文件系统请使用合适的组件。&lt;/strong&gt;)&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;lvresize -L 15G -r datavg/datalv
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果想将卷组所有剩下的可用空间都加入一个逻辑卷中，可以执行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;lvresize -l +100%FREE datavg/datalv
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;缩小&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;从逻辑卷datavg/datalv中减少500MB空间，但不修改其文件系统大小（需要确保文件系统已经缩小过）&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;lvresize -L -500M datavg/datalv
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;调整文件系统大小&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;如果上面执行lv{resize,extend,reduce}时没有使用-r, &amp;ndash;resizefs选项， 或文件系统不支持fsadm(8)（如Btrfs, ZFS等），则需要在缩小逻辑卷之前或扩增逻辑卷后手动调整文件系统大小。注意：&lt;strong&gt;并非所有的文件系统都支持无损或/且在线调整大小。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;对于ext2/ext3/ext4文件系统使用下列命令&lt;/p&gt;
+
+&lt;p&gt;将文件系统大小扩展到逻辑卷支持的最大容量：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;resize2fs datavg/datalv
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;将文件系统减小到其所需的最小容量，也可以指定具体的尺寸：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;resize2fs -M datavg/datalv
+resize2fs datavg/datalv NewSize
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;移除逻辑卷&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;警告: &lt;strong&gt;在移除逻辑卷之前，请先备份好数据以免丢失！&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;首先要找到你所要移除的逻辑卷的名称及其挂载点。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;lvs
+lsblk
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果要移除的逻辑卷有挂载点，那要先卸载挂载点&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;umount /&amp;lt;mountpoint&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最后可以移除逻辑卷了&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;lvremove &amp;lt;volume_group&amp;gt;/&amp;lt;logical_volume&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;最后请不要忘记更新/etc/fstab。&lt;/p&gt;
+
+&lt;p&gt;以上就是LVM调整相关组件大小的操作。&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>LVM管理磁盘的基本用法</title>
