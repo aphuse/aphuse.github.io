@@ -7,12 +7,12 @@
     <language>zh-cn</language>
     <author>aphuse</author>
     
-    <updated>Wed, 30 Dec 2015 14:59:54 &#43;0800</updated>
+    <updated>Wed, 30 Dec 2015 14:59:54 CST</updated>
     
     <item>
       <title>如何调整LVM相关PV、VG和LV大小</title>
       <link>http://aphuse.github.io/post/howtoresizelvm/</link>
-      <pubDate>Wed, 30 Dec 2015 14:59:54 &#43;0800</pubDate>
+      <pubDate>Wed, 30 Dec 2015 14:59:54 CST</pubDate>
       <author>aphuse</author>
       <guid>http://aphuse.github.io/post/howtoresizelvm/</guid>
       <description>
@@ -193,7 +193,7 @@ lsblk
     <item>
       <title>LVM管理磁盘的基本用法</title>
       <link>http://aphuse.github.io/post/howtouselvm/</link>
-      <pubDate>Thu, 17 Dec 2015 14:59:54 &#43;0800</pubDate>
+      <pubDate>Thu, 17 Dec 2015 14:59:54 CST</pubDate>
       <author>aphuse</author>
       <guid>http://aphuse.github.io/post/howtouselvm/</guid>
       <description>
